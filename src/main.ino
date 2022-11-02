@@ -1,126 +1,121 @@
-#include <ESP8266WiFi.h>
-#include <WiFiClient.h>
-#include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
-     
-// ใส่ชื่อพาสเวิดไฟไวของเรา
-const char* ssid = "CEIT-IoT-Lab-2.4G";
-const char* password = "IoT@2022";
+#include <MemoryFree.h>
+#include <EEPROM.h>
 
-ESP8266WebServer server(80);
-MDNSResponder mdns;
-     
-String webPage = "";
-     
-int led_pin = 13;
-     
-void setup(void){
-     
-  // подготовка:
-  pinMode(led_pin, OUTPUT);
-  digitalWrite(led_pin, LOW);
-  Serial.begin(115200);
+#define FIRST_PIN 0   // первый вывод
+#define LAST_PIN 53   // последний вывод
+#define PIN_LED  13   // вывод светодиода
+
+void PinTest1(byte pin)
+{
+  if(pin < 10) Serial.print("PIN:  ");
+  else Serial.print("PIN: ");
+  Serial.print(pin);
+  pinMode(pin, OUTPUT);
+  digitalWrite(pin, 0);
+  Serial.print("    LOW: ");
+  if(!digitalRead(pin)) Serial.print("OK  ");
+  else Serial.print("FAIL");
+  digitalWrite(pin, 1);
+  Serial.print("  HIGH: ");
+  if(digitalRead(pin)) Serial.print("OK  "); 
+  else Serial.print("FAIL");
+  pinMode(pin, INPUT);
+  Serial.print("  PULL UP: ");
+  if(digitalRead(pin)) Serial.print("OK  ");
+  else Serial.print("FAIL");
+  digitalWrite(pin, 0);
+}
+
+void PinTest2(byte pin)
+{
+  Serial.print("     ");
+  pinMode(pin, OUTPUT);
+  digitalWrite(pin, 1);
+  delay(5);
+  if(!digitalRead(pin))Serial.println("SHORT");
+  else Serial.println("OK");
+  pinMode(pin, INPUT); 
+  digitalWrite(pin, 0);
+
+}
+
+void EEPROMTest() {
+
+        }
+
+void displayHelp() {
+  Serial.println(F("\nArduino hardware test"));
+  Serial.println(F("\ta = Blink test"));
+  Serial.println(F("\tb = EEPROM test"));
+  Serial.println(F("\tc = Pins test"));
+  Serial.println(F("\t? = Help page"));
+  Serial.println();
+}
+ 
+void setup() {
+  Serial.begin(115200); 
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
-
-  
-  // ปริ้นค่าสถานะต่างๆ
-  Serial.println("");
-  Serial.println("ESP8266 board info:");
-  Serial.print("\tChip ID: ");
-  Serial.println(ESP.getFlashChipId());
-  Serial.print("\tCore Version: ");
-  Serial.println(ESP.getCoreVersion());
-  Serial.print("\tChip Real Size: ");
-  Serial.println(ESP.getFlashChipRealSize());
-  Serial.print("\tChip Flash Size: ");
-  Serial.println(ESP.getFlashChipSize());
-  Serial.print("\tChip Flash Speed: ");
-  Serial.println(ESP.getFlashChipSpeed());
-  Serial.print("\tChip Speed: ");
-  Serial.println(ESP.getCpuFreqMHz());
-  Serial.print("\tChip Mode: ");
-  Serial.println(ESP.getFlashChipMode());
-  Serial.print("\tSketch Size: ");
-  Serial.println(ESP.getSketchSize());
-  Serial.print("\tSketch Free Space: ");
-  Serial.println(ESP.getFreeSketchSpace());
-
-  // แสดงบนหน้าเว็บ
-  webPage += "<h1>ESP8266 Web Server</h1>";
-  webPage += "<p>Chip ID: ";
-  webPage += ESP.getFlashChipId();
-  webPage += "</p>";
-  webPage += "<p>Core Version: ";
-  webPage += ESP.getCoreVersion();
-  webPage += "</p>";
-  webPage += "<p>Chip Real Size: ";
-  webPage += ESP.getFlashChipRealSize()/1024;
-  webPage += " Kbit</p>";
-  webPage += "<p>Chip Size: ";
-  webPage += ESP.getFlashChipSize()/1024;
-  webPage += " Kbit</p>";
-  webPage += "<p>Chip Flash Speed: ";
-  webPage += ESP.getFlashChipSpeed()/1000000;
-  webPage += " MHz</p>";
-  webPage += "<p>Chip Work Speed: ";
-  webPage += ESP.getCpuFreqMHz();
-  webPage += " MHz</p>";
-  webPage += "<p>Chip Mode: ";
-  webPage += ESP.getFlashChipMode();
-  webPage += "</p>";
-  webPage += "<p>LED state <a href=\"LedON\"><button>ON</button></a>&nbsp;<a href=\"LedOFF\"><button>OFF</button></a></p>";
-
-  // เริ่มการเชื่อมต่อไวไฟ
-  WiFi.begin(ssid, password);
-  Serial.println("");
-     
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.print("Connected to ");  //  "Подключились к "
-  Serial.println(ssid);
-  Serial.print("IP address: ");  //  "IP-адрес: "
-  Serial.println(WiFi.localIP());
-
-  if (mdns.begin("esp8266", WiFi.localIP())) {
-    Serial.println("MDNS responder started");
-  }
-     
-  server.on("/", [](){
-    server.send(200, "text/html", webPage);
-  });
-  
-  server.on("/LedON", [](){
-    server.send(200, "text/html", webPage);
-    digitalWrite(led_pin, HIGH);
-    Serial.println("[ON]");
-    delay(1000);
-  });
-  
-  server.on("/LedOFF", [](){
-    server.send(200, "text/html", webPage);
-    digitalWrite(led_pin, LOW);
-    Serial.println("[OFF]");
-    delay(1000);
-  });
-
-    server.on("/Led?????", [](){
-    server.send(200, "text/html", webPage);
-    digitalWrite(led_pin, LOW);
-    Serial.println("[OFF]");
-    delay(1000);
-  });
-  
-  server.begin();
-  Serial.println("HTTP server started");
-  
+  displayHelp();
 }
-     
-void loop(void){
-  server.handleClient();
+
+void loop() {
+  if (Serial.available() > 0) {
+    switch (Serial.read()) {
+      case 'a': // Тест светодиодом
+        Serial.print(F("\nBlink test:"));
+        Serial.print(F("\n\tStart blinking - please check the board led\n\t"));
+        for(byte i = 1; i <= 10; i++) {
+          digitalWrite(PIN_LED, HIGH);
+          delay(1000);
+          Serial.print(".");
+          digitalWrite(PIN_LED, LOW);
+          delay(1000);
+          Serial.print(F("."));
+        }
+        Serial.print("\n\tStop blinking\n");
+        Serial.println();
+        displayHelp();
+      break;
+      case 'b':
+        Serial.print(F("\nEEPROM test:\n"));
+        Serial.print("\tSRAM free size: ");
+        Serial.print(freeMemory());
+        Serial.print(F(" bytes\n"));
+        Serial.print("\tEEPROM size: ");
+        Serial.print(EEPROM.length());
+        Serial.print(F(" bytes\n"));
+        Serial.println();
+        displayHelp();
+      break;
+      case 'c': // Тест на короткое замыкание выводов
+        Serial.print(F("\nTest of short circuit on GND or VCC and between pins:\n"));
+        for(byte i = FIRST_PIN; i <= LAST_PIN; i++) {
+          for(byte j = FIRST_PIN; j <= LAST_PIN; j++) {
+            pinMode(j, INPUT);
+            digitalWrite(j, 0);
+          }
+          Serial.print(F("\t"));
+          PinTest1(i);
+          for(byte j = FIRST_PIN; j <= LAST_PIN; j++) {
+            pinMode(j, OUTPUT);
+            digitalWrite(j, 0);
+          }
+          PinTest2(i);
+        }
+        for(byte j = FIRST_PIN; j <= LAST_PIN; j++) {
+          pinMode(j, INPUT);
+          digitalWrite(j, 0);
+        }
+        displayHelp();
+      break;
+      case '?':
+        displayHelp();
+      break;
+      default:
+        Serial.println();
+      break;
+    }
+  }
 }
